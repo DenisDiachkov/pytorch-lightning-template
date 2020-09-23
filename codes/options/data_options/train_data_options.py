@@ -1,9 +1,9 @@
 import argparse
-from argparse import ArgumentError
 
 
 def data_train_args(parent_parser):
-    parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+    parser = argparse.ArgumentParser(
+        parents=[parent_parser], add_help=False)
     parser.add_argument(
         "--length", '-n', type=int, default=100)
     parser.add_argument(
