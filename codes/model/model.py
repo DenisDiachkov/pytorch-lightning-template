@@ -15,11 +15,11 @@ class Image2ImageModule(LightningModule):
 
         self.conv1 = torch.nn.Conv2d(
             self.hparams.in_features,
-            self.hparams.out_features, 3)
+            8, 3, padding=1)
 
         self.conv2 = torch.nn.Conv2d(
-            self.hparams.in_features,
-            self.hparams.out_features, 3)
+            8,
+            self.hparams.out_features, 3, padding=1)
 
     def forward(self, x):
         return self.conv2(self.conv1(x))

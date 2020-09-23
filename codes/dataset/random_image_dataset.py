@@ -20,10 +20,10 @@ class RandomImageDataset(Dataset):
 
     def __getitem__(self, idx):
         self.gen.manual_seed(idx + self.seed)
-        x = torch.random(
-            (self.width, self.height, self.channels), generator=self.gen)
+        x = torch.rand(
+            (self.channels, self.width, self.height, ), generator=self.gen)
         self.gen.manual_seed(idx + 2*self.seed)
-        y = torch.random(
-            (self.width, self.height, self.channels), generator=self.gen)
+        y = torch.rand(
+            (self.channels, self.width, self.height, ), generator=self.gen)
 
         return x, y
