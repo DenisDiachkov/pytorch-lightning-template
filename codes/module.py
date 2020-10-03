@@ -44,7 +44,7 @@ class Image2ImageModule(LightningModule):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         
         tensorboard_logs = {
-            'val_loss': avg_loss
+            'Avg loss': avg_loss
         }
         return {
             'val_loss': avg_loss,

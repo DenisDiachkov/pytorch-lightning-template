@@ -1,6 +1,34 @@
+import random
+
+import torch
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader
-from .random_image_dataset import RandomImageDataset
+from torch.utils.data import DataLoader, Dataset
+
+
+class RandomImageDataset(Dataset):
+    def __init__(self, length, width, height, channels, seed=None):
+        self.length = length
+        self.width = width
+        self.height = height
+        self.channels = channels
+        self.gen = torch.Generator()
+        if seed is None:
+            self.seed = random.randint(0, 100000000)
+        else:
+            self.seed = seed
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        self.gen.manual_seed(idx + self.seed)
+        x = torch.rand(
+            (self.channels, self.width, self.height, ), generator=self.gen)
+        self.gen.manual_seed(idx + 2*self.seed)
+        y = torch.rand(
+            (self.channels, self.width, self.height, ), generator=self.gen)
+
+        return x, y
 
 
 class RandomDataModule(LightningDataModule):

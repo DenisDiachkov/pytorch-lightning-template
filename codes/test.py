@@ -1,2 +1,2 @@
-def test(args):
+def test(args, parser):
     pass
