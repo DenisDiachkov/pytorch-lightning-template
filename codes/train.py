@@ -74,12 +74,15 @@ def train(cfg: dict):
     # Checkpointing
     checkpoint_callback_lightning = ModelCheckpoint(
         experiment_path,
-        save_top_k=2,
+        filename="best_Epoch={epoch}_Loss={val_loss:.2f}",
+        save_top_k=1,
         save_last=True,
         monitor="val_loss",
         mode="min",
         verbose=True,
+        auto_insert_metric_name=False
     )
+    checkpoint_callback_lightning.CHECKPOINT_NAME_LAST = "last_Epoch{epoch}_Loss={val_loss:.2f}"
     # Early stopping
     early_stop_callback = EarlyStopping(
         monitor="val_loss",
@@ -91,22 +94,11 @@ def train(cfg: dict):
 
     trainer = Trainer(
         gpus=cfg['gpu'],
+        accelerator="ddp",
         logger=tb_logger,
         num_sanity_val_steps=1,
         deterministic=cfg['deterministic'],
         max_epochs=cfg['epochs'],
-        callbacks=[early_stop_callback],
-        checkpoint_callback=checkpoint_callback_lightning,
+        callbacks=[early_stop_callback, checkpoint_callback_lightning]
     )
-    trainer.fit(get_module(cfg), datamodule=DataModule(cfg, SampleDataset))
-
-
-def resume(cfg: dict):
-    experiment_path = os.path.join(".", "experiments", cfg['experiment_name'])
-    trainer = Trainer.load_from_checkpoint(
-        os.path.join(experiment_path, "checkpoints", "best.ckpt")
-    )
-    trainer.resume_from_checkpoint(
-        os.path.join(experiment_path, "checkpoints", "last.ckpt")
-    )
-    trainer.fit(get_module(cfg), datamodule=DataModule(cfg, SampleDataset))
+    trainer.fit(get_module(cfg), datamodule=DataModule(cfg, SampleDataset), ckpt_path=cfg["resume_path"])

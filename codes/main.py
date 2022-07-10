@@ -6,13 +6,13 @@ from test import test
 import yaml
 
 import utils
-from train import resume, train
+from train import train
 
 
 def parse_cfg():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--cfg", default='cfg/SampleCFG.yaml', type=str
+        "--cfg", default='cfg/train/SampleCFG.yaml', type=str
     )
     args, _ = parser.parse_known_args()
     cfg = yaml.safe_load(open(args.cfg, 'r'))
