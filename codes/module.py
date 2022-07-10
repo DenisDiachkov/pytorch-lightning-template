@@ -28,6 +28,11 @@ class BaseModule(LightningModule):
         loss = self.criterion(self(x=x), y)
         self.log('val_loss', loss, prog_bar=True)
     
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        loss = self.criterion(self(x=x), y)
+        self.log('test_loss', loss, prog_bar=True)
+    
     def configure_optimizers(self):
         if self.optimizer is None:
             return None
