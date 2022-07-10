@@ -3,36 +3,50 @@ import multiprocessing as mp
 import warnings
 from test import test
 
+import yaml
+
 import utils
-from train import train
+from train import resume, train
 
 
-def base_args():
+def parse_cfg():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mode", type=str, choices=['train', 'test'], default='train')
-    parser.add_argument(
-        "--gpu", type=str)
-    parser.add_argument(
-        "--cpu", action="store_true")
-    parser.add_argument(
-        "--num_workers", "--jobs", "-j",
-        type=int, choices=range(mp.cpu_count()+1), default=mp.cpu_count())
-    parser.add_argument("--Wall", action="store_true")
-
+        "--cfg", default='cfg/SampleCFG.yaml', type=str
+    )
     args, _ = parser.parse_known_args()
-    utils.set_device(args)
-    return args, parser
+    cfg = yaml.safe_load(open(args.cfg, 'r'))
+    for key, val in cfg.items():
+        if type(val) is bool:
+            parser.add_argument(
+                f'--{key}',
+                default=val, action=argparse.BooleanOptionalAction
+            )
+        else: 
+            parser.add_argument(
+                f'--{key}',
+                default=val, type=type(val)
+            )
+    args = parser.parse_args()
+    cfg = vars(args)
+    
+    print(cfg, type(val))
+    return cfg
 
 
 def main():
-    args, parser = base_args()
-    if args.Wall:
+    cfg = parse_cfg()
+    utils.set_device(cfg)
+    if cfg['deterministic']:
+        utils.fix_seed(cfg['seed'])
+    if cfg['wall']:
         warnings.simplefilter("error")
-    if args.mode == "train":
-        train(args, parser)
-    elif args.mode == "test":
-        test(args, parser)
+    if cfg['mode'] == "train":
+        train(cfg)
+    elif cfg['mode'] == "test":
+        test(cfg)
+    else:
+        raise ValueError("Invalid mode")
 
 
 if __name__ == "__main__":

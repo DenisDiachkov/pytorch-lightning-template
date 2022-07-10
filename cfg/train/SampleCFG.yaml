@@ -1,0 +1,55 @@
+# BASE CONFIGS
+device: !!str 'gpu:0'
+mode: !!str 'train'
+num_workers: !!int 8
+wall: !!bool False
+deterministic: !!bool True
+seed: !!int 42
+
+# TRAIN CONFIGS
+batch_size: !!int 8
+epochs: !!int 100
+experiment_name: !!str EXAMPLE
+
+patience: !!int 10
+min_delta: !!float 0.0001
+
+optimizer: Adam
+optimizer_params:
+  lr: !!float 0.001
+  betas: [!!float 0.9, !!float 0.999]
+  eps: !!float 1e-08
+  weight_decay: !!float 0.0001
+  amsgrad: !!bool False
+
+scheduler: CosineAnnealingWarmRestarts
+scheduler_params:
+  T_0: !!int 10
+  T_mult: !!int 2
+  eta_min: !!float 0.00001
+  last_epoch: !!int -1
+
+criterion: MultiCriterion
+criterion_weights: [!!float 1.0, !!float 1.0]
+criterions: [
+  {
+    criterion: !!str 'MSELoss',
+    criterion_params: {}
+  },
+  {
+    criterion: !!str 'L1Loss',
+    criterion_params: {}
+  }
+]
+criterion_params:
+  weight: !!float 1.0
+  ignore_index: !!int -1
+
+# DATA CONFIGS
+in_features: !!int 10
+out_features: !!int 10
+
+num_train_samples: !!int 100
+num_val_samples: !!int 100
+# num_test_samples: !!int 100
+  

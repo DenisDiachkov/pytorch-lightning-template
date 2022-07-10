@@ -1,56 +1,33 @@
-from pytorch_lightning import LightningModule
 import torch
+from pytorch_lightning import LightningModule
 
 
-class Image2ImageModule(LightningModule):
-    def __init__(self, model, optimizer, scheduler, criterion):
+class BaseModule(LightningModule):
+    def __init__(
+        self, 
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        scheduler: torch.optim.lr_scheduler._LRScheduler,
+        criterion: torch.nn.Module,
+    ):
         super().__init__()
-        # save all variables in __init__ signature to self.hparams
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.criterion = criterion
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, **inputs):
+        return self.model(**inputs)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx: int):
         x, y = batch
-        p = self(x)
-        loss = self.criterion(p, y)
-        
-        tensorboard_logs = {
-            'train_loss': loss
-        }
-        return {
-            'loss': loss, 
-            'log': tensorboard_logs
-        }
+        return self.criterion(self(x=x), y)
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        p = self(x)
-        loss = self.criterion(p, y)
-        
-        tensorboard_logs = {
-            'train_loss': loss
-        }
-        return {
-            'val_loss': loss, 
-            'log': tensorboard_logs
-        }
-
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        
-        tensorboard_logs = {
-            'Avg loss': avg_loss
-        }
-        return {
-            'val_loss': avg_loss,
-            'log': tensorboard_logs
-        }
-
+        loss = self.criterion(self(x=x), y)
+        self.log('val_loss', loss, prog_bar=True)
+    
     def configure_optimizers(self):
         if self.optimizer is None:
             return None

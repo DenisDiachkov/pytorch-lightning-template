@@ -1,0 +1,30 @@
+# BASE CONFIGS
+device: !!str 'gpu:0'
+mode: !!str 'train'
+num_workers: !!int 8
+wall: !!bool False
+deterministic: !!bool True
+seed: !!int 42
+
+# TEST CONFIGS
+experiment_name: !!str EXAMPLE
+
+criterion: MultiCriterion
+criterion_weights: [!!float 1.0, !!float 1.0]
+criterions: [
+  {
+    criterion: !!str 'MSELoss',
+    criterion_params: {}
+  },
+  {
+    criterion: !!str 'L1Loss',
+    criterion_params: {}
+  }
+]
+
+# DATA CONFIGS
+in_features: !!int 10
+out_features: !!int 10
+
+num_test_samples: !!int 100
+  
