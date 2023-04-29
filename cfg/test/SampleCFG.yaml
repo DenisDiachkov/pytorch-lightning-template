@@ -1,5 +1,5 @@
 # BASE CONFIGS
-device: !!str 'gpu:0'
+devices: [0, 1]
 mode: !!str 'test'
 num_workers: !!int 8
 wall: !!bool False
@@ -7,7 +7,7 @@ deterministic: !!bool True
 seed: !!int 42
 
 # TEST CONFIGS
-pretrained_model: !!str experiments/EXAMPLE/best_Epoch=97_Loss=0.19.ckpt
+pretrained_model: !!str experiments/EXAMPLE/best_Epoch=13_Loss=0.93.ckpt
 batch_size: !!int 10
 
 criterion: MultiCriterion

@@ -36,7 +36,6 @@ def parse_cfg():
 
 def main():
     cfg = parse_cfg()
-    utils.set_device(cfg)
     if cfg['deterministic']:
         utils.fix_seed(cfg['seed'])
     if cfg['wall']:

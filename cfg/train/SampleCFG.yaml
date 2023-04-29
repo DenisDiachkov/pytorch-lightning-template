@@ -1,5 +1,5 @@
 # BASE CONFIGS
-device: !!str 'gpu:0'
+devices: [0, 1]
 mode: !!str 'train'
 num_workers: !!int 8
 wall: !!bool False
@@ -10,7 +10,7 @@ seed: !!int 42
 batch_size: !!int 8
 epochs: !!int 100
 experiment_name: !!str EXAMPLE
-resume_path: !!str experiments/EXAMPLE/last_Epoch23_Loss=0.76.ckpt
+resume_path: null
 
 patience: !!int 10
 min_delta: !!float 0.0001

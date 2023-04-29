@@ -35,7 +35,7 @@ def get_module(cfg: dict):
 
 def test(cfg: dict):
     tester = Trainer(
-        gpus=cfg['gpu'],
+        devices=cfg['gpu'],
         deterministic=cfg['deterministic'],
         logger=False
     )

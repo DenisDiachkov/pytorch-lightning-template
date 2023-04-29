@@ -6,13 +6,6 @@ import torch
 import yaml
 
 
-def set_device(cfg: dict):
-    if cfg['device'] == 'cpu':
-        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-        cfg['gpu'] = None
-    elif cfg['device'][:3] == 'gpu':
-        cfg['gpu'] = list(map(int, cfg['device'][4:].split(',')))
-
 
 def fix_seed(seed: int):
     torch.manual_seed(seed)

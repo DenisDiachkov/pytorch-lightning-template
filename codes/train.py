@@ -91,8 +91,8 @@ def train(cfg: dict):
     )            
 
     trainer = Trainer(
-        gpus=cfg['gpu'],
-        accelerator="ddp",
+        devices=cfg['devices'],
+        accelerator="cuda",
         logger=tb_logger,
         num_sanity_val_steps=1,
         deterministic=cfg['deterministic'],
