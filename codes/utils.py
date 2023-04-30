@@ -1,10 +1,8 @@
-import os
+import importlib
 import random
 
 import numpy as np
 import torch
-import yaml
-
 
 
 def fix_seed(seed: int):
@@ -17,6 +15,7 @@ def fix_seed(seed: int):
     torch.backends.cudnn.enabled = False
 
 
-def save_config(cfg: dict, path: str):
-    with open(path, 'w') as f:
-        yaml.dump(cfg, f)
+def get_obj(obj_path: str):
+    module_name, obj_name = obj_path.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, obj_name)

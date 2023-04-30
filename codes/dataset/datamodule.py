@@ -1,41 +1,50 @@
-import random
-
-import torch
+import utils
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
 
 class DataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: dict, 
-        data_cls: type = Dataset,
+        mode: str,
+        dataset: str,
+        dataset_params: dict = {},
+        
+        train_dataset_params: dict = {},
+        val_dataset_params: dict = {},
+        test_dataset_params: dict = {},
+        dataloader_params: dict = {},
+
+        train_dataloader_params: dict = {},
+        val_dataloader_params: dict = {},
+        test_dataloader_params: dict = {},
     ):
         super().__init__()
-        self.cfg = cfg
-        self.data_cls = data_cls
-        if cfg['mode'] == 'train':
-            self.data_train = self.data_cls("train", self.cfg)
-            self.data_val = self.data_cls("val", self.cfg)
-        if cfg['mode'] == 'test':
-            self.data_test = self.data_cls("test", self.cfg)
+        if mode == 'train':
+            self.data_train = utils.get_obj(dataset)(**dataset_params | train_dataset_params)
+            self.data_val = utils.get_obj(dataset)(**dataset_params | val_dataset_params)
+        if mode == 'test':
+            self.data_test = utils.get_obj(dataset)(**dataset_params | test_dataset_params)
+
+        self.dataloader_params = dataloader_params
+        self.train_dataloader_params = train_dataloader_params
+        self.val_dataloader_params = val_dataloader_params
+        self.test_dataloader_params = test_dataloader_params
         
     def train_dataloader(self):
         return DataLoader(
             self.data_train, 
-            batch_size=self.cfg['batch_size'], 
-            shuffle=True, num_workers=self.cfg['num_workers']
+            **self.dataloader_params | self.train_dataloader_params
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.data_val,
-            batch_size=self.cfg['batch_size'], 
-            shuffle=True, num_workers=self.cfg['num_workers']
+            **self.dataloader_params | self.val_dataloader_params
         )
     
     def test_dataloader(self):
-        return DataLoader(self.data_test, 
-            batch_size=self.cfg['batch_size'], 
-            shuffle=True, num_workers=self.cfg['num_workers']
+        return DataLoader(
+            self.data_test, 
+            **self.dataloader_params | self.test_dataloader_params
         )

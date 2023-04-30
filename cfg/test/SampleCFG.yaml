@@ -1,31 +1,38 @@
-# BASE CONFIGS
-devices: [0, 1]
 mode: !!str 'test'
-num_workers: !!int 8
 wall: !!bool False
-deterministic: !!bool True
-seed: !!int 42
+seed: &seed !!int 42
+checkpoint_path: null
 
-# TEST CONFIGS
-pretrained_model: !!str experiments/EXAMPLE/best_Epoch=13_Loss=0.93.ckpt
-batch_size: !!int 10
+trainer_params:
+  deterministic: !!bool True
+  devices: [0, 1]
+  accelerator: !!str 'cuda'
 
-criterion: MultiCriterion
-criterion_weights: [!!float 1.0, !!float 1.0]
-criterions: [
-  {
-    criterion: !!str 'MSELoss',
-    criterion_params: {}
-  },
-  {
-    criterion: !!str 'L1Loss',
-    criterion_params: {}
+lightning_module: module.BaseModule
+lightning_module_params:
+  model: model.sample_model.SampleModel
+  model_params:
+    in_features: !!int 10
+    out_features: !!int 10
+  criterion: criterion.multi_criterion.MultiCriterion
+  criterion_params: { 
+    criterions: [ torch.nn.MSELoss,torch.nn.L1Loss ],
+    criterion_weights: [!!float 1.0, !!float 1.0],
   }
-]
 
-# DATA CONFIGS
-in_features: !!int 10
-out_features: !!int 10
 
-num_test_samples: !!int 100
+datamodule_params:
+  dataset: dataset.sample_dataset.SampleDataset
+  dataset_params:
+    in_features: !!int 10
+    out_features: !!int 10
+    num_samples: !!int 100
+
+  dataloader_params:
+    batch_size: !!int 1
+    shuffle: !!bool True
+    num_workers: !!int 8
+    pin_memory: !!bool True
+    drop_last: !!bool True
+
   

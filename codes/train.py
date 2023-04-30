@@ -4,99 +4,29 @@ from email import utils
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as sched
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger as tb
-
 import utils
-from criterion.MultiCriterion import MultiCriterion
 from dataset.datamodule import DataModule
-from dataset.SampleDataset import SampleDataset
-from models.SampleModel import SampleModel
-from module import BaseModule
-
-
-def get_optimizer(model, cfg):
-    if cfg['optimizer'] == 'Adam':
-        cls = optim.Adam
-    elif cfg['optimizer'] == 'SGD':
-        cls =  optim.SGD
-    else:
-        raise ValueError(f'Unknown optimizer {cfg["optimizer"]}')
-    return cls(model.parameters(), **cfg['optimizer_params'])
-
-
-def get_scheduler(optimizer, cfg):
-    if cfg['scheduler'] == 'CosineAnnealingWarmRestarts':
-        cls = sched.CosineAnnealingWarmRestarts
-    elif cfg['scheduler'] == 'StepLR':
-        cls = sched.StepLR
-    else:
-        raise ValueError(f'Unknown scheduler {cfg["scheduler"]}')
-    return cls(optimizer, **cfg['scheduler_params'])
-
-
-def get_criterion(cfg: dict):
-    if cfg['criterion'] == 'MSELoss':
-        cls = nn.MSELoss
-    elif cfg['criterion'] == 'CrossEntropyLoss':
-        cls = nn.CrossEntropyLoss
-    elif cfg['criterion'] == 'L1Loss':
-        cls = nn.L1Loss
-    elif cfg['criterion'] == 'MultiCriterion':
-        cls = MultiCriterion
-        criterions = []
-        for criterion in cfg['criterions']:
-            criterions.append(get_criterion(criterion))
-        return cls(*criterions, weights=cfg['criterion_weights'])
-    else:
-        raise ValueError(f'Unknown criterion {cfg["criterion"]}')
-    return cls(**cfg['criterion_params'])
-
-
-def get_module(cfg: dict):
-    model = SampleModel(cfg['in_features'], cfg['out_features'])
-    optimizer = get_optimizer(model, cfg)
-    scheduler = get_scheduler(optimizer, cfg)
-    criterion = get_criterion(cfg)
-    return BaseModule(model, optimizer, scheduler, criterion)
+from pytorch_lightning import Trainer
+from pytorch_lightning.loggers import TensorBoardLogger as tb
 
 
 def train(cfg: dict):
-    experiment_path = os.path.join(".", "experiments", cfg['experiment_name'])
-    if not os.path.exists(experiment_path):
-        os.makedirs(experiment_path)
-    tb_logger = tb(".", "experiments", version=cfg['experiment_name'])
-    utils.save_config(cfg, os.path.join(experiment_path, "config.yaml"))
-
-    # Checkpointing
-    checkpoint_callback_lightning = ModelCheckpoint(
-        experiment_path,
-        filename="best_Epoch={epoch}_Loss={val_loss:.2f}",
-        save_top_k=1,
-        save_last=True,
-        monitor="val_loss",
-        mode="min",
-        verbose=True,
-        auto_insert_metric_name=False
-    )
-    checkpoint_callback_lightning.CHECKPOINT_NAME_LAST = "last_Epoch{epoch}_Loss={val_loss:.2f}"
-    # Early stopping
-    early_stop_callback = EarlyStopping(
-        monitor="val_loss",
-        patience=cfg['patience'],
-        verbose=True,
-        mode="min",
-        min_delta=cfg['min_delta'],
-    )            
-
+    if not os.path.exists(cfg.experiment_path):
+        os.makedirs(cfg.experiment_path)
+    tb_logger = tb(".", "experiments", version=cfg.experiment_name)
+    callbacks = [
+        utils.get_obj(callback.callback)(
+            **callback.callback_params | ({"dirpath": cfg.experiment_path} if callback.callback.endswith("ModelCheckpoint") else {})
+        ) 
+        for callback in cfg.trainer_callbacks
+    ]
     trainer = Trainer(
-        devices=cfg['devices'],
-        accelerator="cuda",
         logger=tb_logger,
-        num_sanity_val_steps=1,
-        deterministic=cfg['deterministic'],
-        max_epochs=cfg['epochs'],
-        callbacks=[early_stop_callback, checkpoint_callback_lightning]
+        callbacks=callbacks,
+        **cfg.trainer_params
     )
-    trainer.fit(get_module(cfg), datamodule=DataModule(cfg, SampleDataset), ckpt_path=cfg["resume_path"])
+    trainer.fit(
+        utils.get_obj(cfg.lightning_module)(cfg.lightning_module_params),
+        datamodule=DataModule(cfg.mode, **cfg.datamodule_params), 
+        ckpt_path=cfg.resume_path
+    )

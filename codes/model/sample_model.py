@@ -8,7 +8,7 @@ class SampleModel(LightningModule):
         in_features: int = 3,
         out_features: int = 3,
     ):
-        super().__init__()
+        super(SampleModel, self).__init__()
         self.linear = torch.nn.Linear(in_features, out_features)
 
     def forward(self, x):
