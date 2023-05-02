@@ -1,8 +1,16 @@
 mode: !!str 'train'
 wall: !!bool False
 seed: &seed !!int 42
-experiment_name: !!str Example2
+experiment_name: &experiment_name Example2
 resume_path: null
+
+logger_params:
+  project: !!str 'sample_project'
+  name: *experiment_name
+  version: null
+  save_dir: '/tmp/wandb/'
+
+
 trainer_params:
   deterministic: !!bool True
   devices: [0, 1]
