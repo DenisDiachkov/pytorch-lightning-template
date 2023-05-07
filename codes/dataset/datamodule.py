@@ -1,6 +1,7 @@
 import utils
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
+import numpy as np
 
 
 class DataModule(LightningDataModule):
@@ -34,17 +35,20 @@ class DataModule(LightningDataModule):
     def train_dataloader(self):
         return DataLoader(
             self.data_train, 
-            **self.dataloader_params | self.train_dataloader_params
+            **self.dataloader_params | self.train_dataloader_params,
+            worker_init_fn = lambda worker_id: np.random.seed(np.random.get_state()[1][0] + worker_id)
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.data_val,
-            **self.dataloader_params | self.val_dataloader_params
+            **self.dataloader_params | self.val_dataloader_params,
+            worker_init_fn = lambda worker_id: np.random.seed(np.random.get_state()[1][0] + worker_id)
         )
     
     def test_dataloader(self):
         return DataLoader(
             self.data_test, 
-            **self.dataloader_params | self.test_dataloader_params
+            **self.dataloader_params | self.test_dataloader_params,
+            worker_init_fn = lambda worker_id: np.random.seed(np.random.get_state()[1][0] + worker_id)
         )
