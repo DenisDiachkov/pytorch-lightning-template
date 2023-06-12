@@ -17,7 +17,16 @@ def fix_seed(seed: int):
     torch.backends.cudnn.enabled = False
 
 
-def get_obj(obj_path: str):
+def get_cls(obj_path: str):
+    if obj_path is None:
+        return None
     module_name, obj_name = obj_path.rsplit('.', 1)
     module = importlib.import_module(module_name)
     return getattr(module, obj_name)
+
+
+def get_instance(obj_path: str, params: dict = {}):
+    cls = get_cls(obj_path)
+    if cls is None:
+        return None
+    return cls(**params)

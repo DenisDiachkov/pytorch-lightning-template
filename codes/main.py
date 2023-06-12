@@ -11,7 +11,7 @@ from train import train
 def parse_cfg():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--cfg", default='cfg/train/SampleCFG.yaml', type=str
+        "--cfg", default='cfg/train/Template.yaml', type=str
     )
     args, left_argv = parser.parse_known_args()
     cfg = sconf.Config(args.cfg)
@@ -20,7 +20,7 @@ def parse_cfg():
 
 
 def save_cfg(cfg: dict):
-    cfg.experiment_path = os.path.join(".", "experiments", cfg.experiment_name)
+    cfg.experiment_path = os.path.join(".", "experiments", cfg.experiment_name, cfg.logger_params.version if cfg.logger_params.version is not None else "")
     if not os.path.exists(cfg.experiment_path):
         os.makedirs(cfg.experiment_path)
     with open(os.path.join(cfg.experiment_path, "config.yaml"), "w") as f:
@@ -29,6 +29,9 @@ def save_cfg(cfg: dict):
 
 def main():
     cfg = parse_cfg()
+    if cfg.environ_vars is not None:
+        for k, v in cfg.environ_vars.items():
+            os.environ[k] = str(v)
     if cfg.trainer_params.deterministic:
         utils.fix_seed(cfg['seed'])
     if cfg.wall:

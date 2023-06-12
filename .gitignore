@@ -133,3 +133,8 @@ dmypy.json
 .vscode/
 lightning_logs/
 experiments/
+
+#
+input
+experiments/
+notebooks/

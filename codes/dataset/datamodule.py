@@ -2,6 +2,7 @@ import utils
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
 import numpy as np
+import pickle
 
 
 class DataModule(LightningDataModule):
@@ -22,10 +23,12 @@ class DataModule(LightningDataModule):
     ):
         super().__init__()
         if mode == 'train':
-            self.data_train = utils.get_obj(dataset)(**dataset_params | train_dataset_params)
-            self.data_val = utils.get_obj(dataset)(**dataset_params | val_dataset_params)
-        if mode == 'test':
-            self.data_test = utils.get_obj(dataset)(**dataset_params | test_dataset_params)
+            self.data_train = utils.get_instance(dataset, {'mode': 'train'} | dataset_params | train_dataset_params)
+            self.data_val = utils.get_instance(dataset, {'mode': 'val'} | dataset_params | val_dataset_params)
+        elif mode == 'test':
+            self.data_test = utils.get_instance(dataset, {'mode': 'test'} | dataset_params | test_dataset_params)
+
+        self.dataset_test_params = {'mode': 'test'} | dataset_params | test_dataset_params
 
         self.dataloader_params = dataloader_params
         self.train_dataloader_params = train_dataloader_params

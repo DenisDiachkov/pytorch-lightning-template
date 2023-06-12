@@ -1,54 +1,76 @@
+from typing import Any
 import torch
 import utils
 from multipledispatch import dispatch
 from pytorch_lightning import LightningModule
+from abc import ABC, abstractmethod
 
 
-class BaseModule(LightningModule):
-    @dispatch(torch.nn.Module, torch.optim.Optimizer, torch.optim.lr_scheduler._LRScheduler, torch.nn.Module)
+class BaseModule(LightningModule, ABC):
     def __init__(
-        self, 
-        model: torch.nn.Module,
-        optimizer: torch.optim.Optimizer,
-        scheduler: torch.optim.lr_scheduler._LRScheduler,
-        criterion: torch.nn.Module,
-    ):
+            self, 
+            model:str, model_params: dict, 
+            optimizer:str=None, optimizer_params: dict = None, 
+            scheduler:str=None, scheduler_params: dict = None, 
+            criterion:str=None, criterion_params: dict = None
+        ):
         super().__init__()
-        self.model = model
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.criterion = criterion
+        self.model = utils.get_instance(model, model_params)
+        self.optimizer = utils.get_instance(optimizer, {'params':self.model.parameters()} | optimizer_params)
+        self.scheduler = utils.get_instance(scheduler, {'optimizer':self.optimizer} | scheduler_params) 
+        self.criterion = utils.get_instance(criterion, criterion_params)
     
-    @dispatch(dict)
-    def __init__(self, cfg: dict):
-        super().__init__()
-        self.model = utils.get_obj(cfg.model)(**cfg.model_params)
-        self.optimizer = utils.get_obj(cfg.optimizer)(self.model.parameters(), **cfg.optimizer_params) if 'optimizer' in cfg else None
-        self.scheduler = utils.get_obj(cfg.scheduler)(self.optimizer, **cfg.scheduler_params) if 'scheduler' in cfg else None
-        self.criterion = utils.get_obj(cfg.criterion)(**cfg.criterion_params) if 'criterion' in cfg else None
+    @abstractmethod
+    def forward(self, *args: Any, **kwargs: Any):
+        pass
 
-    def forward(self, **inputs):
-        return self.model(**inputs)
+    @abstractmethod
+    def calc_loss(self, batch):
+        pass
 
     def training_step(self, batch, batch_idx: int):
-        x, y = batch
-        return self.criterion(self(x=x), y)
+        batch['output'] = self(batch)
+        loss = self.calc_loss(batch).mean()
+        self.log('train_loss', loss, prog_bar=True, sync_dist=True)
+        self.log('lr', self.scheduler.get_last_lr()[0], prog_bar=True, sync_dist=True)
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        loss = self.criterion(self(x=x), y)
-        self.log('val_loss', loss, prog_bar=True)
+        batch['output'] = self(batch)
+        loss = self.calc_loss(batch).mean()
+        self.log('val_loss', loss, prog_bar=True, sync_dist=True)
     
     def test_step(self, batch, batch_idx):
-        x, y = batch
-        loss = self.criterion(self(x=x), y)
-        self.log('test_loss', loss, prog_bar=True)
+        batch['output'] = self(batch)
+        loss = self.calc_loss(batch).mean()
+        self.log('test_loss', loss, prog_bar=True, sync_dist=True)
     
     def configure_optimizers(self):
         if self.optimizer is None:
             return None
-        if not isinstance(self.optimizer, list):
-            self.optimizer = [self.optimizer]
-        if not isinstance(self.scheduler, list):
-            self.scheduler = [self.scheduler]
-        return self.optimizer, self.scheduler
+        return {
+            'optimizer': self.optimizer, 
+            'scheduler': self.scheduler
+        }
+
+
+class DummyModule(BaseModule):
+    def __init__(
+            self, 
+            model:str, model_params: dict, 
+            optimizer:str=None, optimizer_params: dict = None, 
+            scheduler:str=None, scheduler_params: dict = None, 
+            criterion:str=None, criterion_params: dict = None
+        ):
+        super().__init__(
+            model, model_params, 
+            optimizer, optimizer_params, 
+            scheduler, scheduler_params, 
+            criterion, criterion_params
+        )
+    
+    def forward(self, x):
+        return self.model(x)
+    
+    def calc_loss(self, batch):
+        return self.criterion(batch['output'], batch['target'])
