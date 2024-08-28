@@ -1,0 +1,108 @@
+mode: !!str "train"  # train or test
+wall: !!bool False  # If True, all warnings will be treated as errors 
+seed: !!int &seed 42  # Random seed
+experiment_name: &experiment_name <your experiment name> # Experiment name for WanDB logging and checkpoint saving (will be saved to ./experiments/*experiment_name*)
+version: &version 0
+resume_path:  # Checkpoint .ckpt path to resume the training
+no_logging: False  # If True, turns off the WanDB logging
+loglevel: !!str "debug"  # Loglevel for python logging (debug, info, warning, error, critical)
+
+environ_vars:  # System environment variables 
+  WANDB_SILENT: !!bool False
+
+logger_params:  # WanDB logger parameters
+  project: !!str "<your project name>"
+  name: *experiment_name
+  version: null
+  save_dir: "/tmp/wandb/"
+ 
+trainer_params:  # PyTorch Lightning trainer parameters. See more here: https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
+  deterministic: !!str "warn"
+  devices: [0, 1]
+  accelerator: !!str "cuda"
+  num_sanity_val_steps: !!int 2
+  max_epochs: 100
+  precision: 32
+  limit_train_batches: null
+  limit_val_batches: !!int 10
+  log_every_n_steps: !!int &log_metrics_every_n_steps 5
+
+trainer_callbacks:  # PyTorch Lightning callbacks. See more here: https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html
+  [
+    {
+      callback: pytorch_lightning.callbacks.early_stopping.EarlyStopping, # Callback class
+      callback_params: # Callback parameters
+        {
+          monitor: !!str "val_loss",
+          min_delta: !!float 0.0001,
+          patience: !!int 100000,
+          verbose: !!bool False,
+          mode: !!str "min",
+        },
+    },
+    {
+      callback: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint,
+      callback_params:
+        {
+          monitor: !!str "val_loss",
+          filename: !!str "best_Epoch={epoch}_Loss={val_loss:.2f}",
+          save_top_k: !!int 1,
+          save_last: !!bool True,
+          mode: !!str "min",
+          verbose: !!bool False,
+        },
+    },
+  ]
+
+lightning_module: .module.BaseModule  # PyTorch Lightning module class
+lightning_module_params:  # PyTorch Lightning module parameters
+  model: .model.resnet.ResNet  # Torch model class
+  model_params:  # Torch model parameters
+    in_channels: !!int 1
+    out_channels: !!int 64
+    num_blocks: !!int 3
+    num_classes: !!int 10
+    
+
+  optimizer: torch.optim.AdamW  # Torch optimizer class
+  optimizer_params:  # Torch optimizer parameters
+    lr: !!float 0.001
+  criterion: .criterion.multi_criterion.MultiCriterion  # Torch criterion class
+  criterion_params:  # Torch criterion parameters
+    {
+      criterions:
+        [
+          {
+            criterion: torch.nn.CrossEntropyLoss,
+            criterion_params: {}
+          },
+        ],
+    }
+  scheduler: torch.optim.lr_scheduler.CosineAnnealingLR  # Torch scheduler class
+  scheduler_params:  # Torch scheduler parameters
+    T_max: !!int 100
+    eta_min: !!float 0.0001
+  log_metrics_every_n_steps: *log_metrics_every_n_steps
+
+datamodule_params:  # PyTorch Lightning datamodule parameters (Implementation here: src/pytorch-lightning-template/dataset/datamodule.py)
+  dataset: .dataset.fashion_mnist.FashionMNIST
+  dataset_params: {
+    root: !!str './data',
+  }
+  train_dataset_params:  # Parameters specific to the training dataset (will override dataset_params)
+    albumentations_transform:  # Albumentation A.Compose components (see more here: https://albumentations.ai/docs/api_reference/core/composition/)
+      {
+        albumentations.HorizontalFlip: { p: 0.5 },
+        albumentations.ShiftScaleRotate: { p: 0.2 },
+      }
+  dataloader_params:  # DataLoader parameters
+    shuffle: !!bool True
+    num_workers: !!int 8
+    pin_memory: !!bool True
+    persistent_workers: !!bool True
+  train_dataloader_params:  # Parameters specific to the training dataloader (will override dataloader_params)
+    batch_size: !!int 8
+    shuffle: !!bool True
+  val_dataloader_params:   # Parameters specific to the validation dataloader (will override dataloader_params)
+    batch_size: !!int 8
+    shuffle: !!bool False

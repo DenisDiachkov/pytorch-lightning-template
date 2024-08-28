@@ -1,0 +1,14 @@
+[MAIN]
+generated-members=cv2.*,torch.*,numpy.*
+
+[MESSAGES CONTROL]
+disable=C0111,  # missing-docstring
+        E1101,  # no-member
+        C0103   # invalid-name (cv2 uses some unconventional naming)
+
+[FORMAT]
+max-line-length=120
+
+[TYPECHECK]
+ignored-modules=cv2
+ignored-classes=cv2

@@ -1,0 +1,91 @@
+mode: !!str "train"
+wall: !!bool False
+seed: !!int &seed 42
+experiment_name: &experiment_name overfit_test
+experiment_path: !!str "tests/functional_tests/experiment"
+version: &version 0
+resume_path:
+no_logging: True
+loglevel: !!str "debug"
+
+trainer_params:
+  deterministic: !!str "warn"
+  devices: 1
+  accelerator: !!str "cpu"
+  num_sanity_val_steps: !!int 2
+  max_epochs: 100
+  precision: 32
+  # fast_dev_run: !!bool True
+  max_time: 00:00:10:00
+  overfit_batches: !!int 1
+  log_every_n_steps: !!int 1
+
+trainer_callbacks:
+  [
+    {
+      callback: pytorch_lightning.callbacks.early_stopping.EarlyStopping,
+      callback_params:
+        {
+          monitor: !!str "val_loss",
+          min_delta: !!float 0.0001,
+          patience: !!int 5,
+          verbose: !!bool False,
+          mode: !!str "min",
+        },
+    },
+  ]
+
+lightning_module: .module.BaseModule  # PyTorch Lightning module class
+lightning_module_params:  # PyTorch Lightning module parameters
+  model: .model.resnet.ResNet  # Torch model class
+  model_params:  # Torch model parameters
+    in_channels: !!int 1
+    out_channels: !!int 64
+    num_blocks: !!int 3
+    num_classes: !!int 10
+    
+
+  optimizer: torch.optim.AdamW  # Torch optimizer class
+  optimizer_params:  # Torch optimizer parameters
+    lr: !!float 0.001
+  criterion: .criterion.multi_criterion.MultiCriterion  # Torch criterion class
+  criterion_params:  # Torch criterion parameters
+    {
+      criterions:
+        [
+          {
+            criterion: torch.nn.CrossEntropyLoss,
+            criterion_params: {}
+          },
+        ],
+    }
+  scheduler: torch.optim.lr_scheduler.CosineAnnealingLR  # Torch scheduler class
+  scheduler_params:  # Torch scheduler parameters
+    T_max: !!int 100
+    eta_min: !!float 0.0001
+  log_metrics_every_n_steps: *log_metrics_every_n_steps
+
+datamodule_params:  # PyTorch Lightning datamodule parameters (Implementation here: src/pytorch-lightning-template/dataset/datamodule.py)
+  dataset: .dataset.fashion_mnist.FashionMNIST
+  dataset_params: {
+    root: !!str './data',
+  }
+  train_dataset_params:  # Parameters specific to the training dataset (will override dataset_params)
+    albumentations_transform:  # Albumentation A.Compose components (see more here: https://albumentations.ai/docs/api_reference/core/composition/)
+      {
+        albumentations.CropNonEmptyMaskIfExists:  # Augmentation class
+          { height: 512, width: 512, p: 1.0 }, # Augmentation parameters
+        albumentations.HorizontalFlip: { p: 0.5 },
+        albumentations.ShiftScaleRotate: { p: 0.2 },
+      }
+  dataloader_params:  # DataLoader parameters
+    shuffle: !!bool True
+    num_workers: !!int 8
+    pin_memory: !!bool True
+    persistent_workers: !!bool True
+  train_dataloader_params:  # Parameters specific to the training dataloader (will override dataloader_params)
+    batch_size: !!int 8
+    shuffle: !!bool True
+  val_dataloader_params:   # Parameters specific to the validation dataloader (will override dataloader_params)
+    batch_size: !!int 8
+    shuffle: !!bool False

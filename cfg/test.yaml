@@ -1,0 +1,46 @@
+mode: !!str 'test'
+wall: !!bool False
+seed: &seed !!int 42
+checkpoint_path: !!str experiments/<experiment_name>/<checkpoint_name>.ckpt
+loglevel: !!str 'debug'
+environ_vars:
+
+trainer_params:
+  deterministic: !!str "warn"
+  devices: [0, 1]
+  accelerator: !!str 'cuda'
+  num_sanity_val_steps: !!int 2
+  precision: 32
+
+
+lightning_module: .module.BaseModule
+lightning_module_params:
+  model: .model.resnet.ResNet  # Torch model class
+  model_params:  # Torch model parameters
+    in_channels: !!int 1
+    out_channels: !!int 64
+    num_blocks: !!int 3
+    num_classes: !!int 10
+  criterion: .criterion.multi_criterion.MultiCriterion  # Torch criterion class
+  criterion_params:  # Torch criterion parameters
+    {
+      criterions:
+        [
+          {
+            criterion: torch.nn.CrossEntropyLoss,
+            criterion_params: {}
+          },
+        ],
+    }
+
+datamodule_params:
+  dataset: .dataset.fashion_mnist.FashionMNIST
+  dataset_params: {
+    root: !!str './data',
+  }
+  dataloader_params:
+    shuffle: !!bool False
+    num_workers: !!int 8
+    pin_memory: !!bool True
+    persistent_workers: !!bool True
+    batch_size: !!int 8
